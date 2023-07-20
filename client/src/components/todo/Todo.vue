@@ -2,81 +2,150 @@
   <div class="todo_container">
     <div class="todo_create">
       <h3>CREATE TODO</h3>
-      <div class="input_container">
-        <input type="text" v-model="todoVal" />
-        <button @click="createTodo()">CREATE</button>
-      </div>
+      <form class="input_container" @submit.prevent="createTodo()">
+        <input
+          type="text"
+          v-model="todoVal"
+          @click="handleInputClick('todoVal')"
+        />
+        <!-- <span v-if="inputClicked && errMsg['todoVal']" class="err_msg">{{
+          errMsg["todoVal"]
+        }}</span> -->
 
+        <!-- <input type="text" v-model="name" @click="handleInputClick('name')" />
+        <span v-if="inputClicked && errMsg['name']" class="err_msg">{{
+          errMsg["name"]
+        }}</span> -->
+        <button type="submit">CREATE</button>
+      </form>
+    </div>
+
+    <div class="todo_table_container">
+      <h2>Todo-Lists</h2>
       <div class="sorting">
-        <!-- <select name="" id="">
+        <select v-model="sortOption">
           <option value="" disabled>Sorting</option>
-          <option value="asc" @click="sortAsc()">Ascending</option>
+          <option value="asc">Ascending</option>
           <option value="desc">Descending</option>
-        </select> -->
-        <button @click="sortAsc()">Sort Asc</button>
-        <button @click="sortDesc()">Sort Desc</button>
+        </select>
       </div>
 
-      <div class="list_container">
-        <li v-for="item in todoList" :key="item.id">
+      <!-- <div class="searching">
+        <input type="text" placeholder="Search item..." v-model="searchTerm" />
+        <ul class="list_container">
+          <li v-for="item in filteredList" :key="item.id">{{ item.title }}</li>
+        </ul>
+      </div> -->
+      <TodoTable
+        :todos="todoList"
+        @delete_todo="deleteTodo"
+        @edit_todo="editTodo"
+        @update_todo="updateTodo"
+      />
+    </div>
+
+    <!-- <div>
+      <input type="text" v-model="searchTerm" placeholder="Search item..." />
+      <ul class="list_container">
+        <li v-for="item in filteredList" :key="item.id">
           <div v-if="item.isEditing" class="input_container">
             <input type="text" v-model="item.updatedTitle" />
-            <button @click="updateTodo()">Update</button>
+            <button @click="updateTodo(item._id)">Update</button>
           </div>
           <div v-else class="data_container">
             {{ item.title }}
             <div class="todo_action_btns">
-              <button @click="deleteTodo(item.id)">Delete</button>
+              <button @click="deleteTodo(item._id)">Delete</button>
               <button @click="editTodo(item)">Edit</button>
             </div>
           </div>
         </li>
-      </div>
-    </div>
+      </ul>
+    </div> -->
   </div>
 </template>
 
 <script>
 import Header from "../layouts/Header.vue";
+import TodoTable from "./TodoTable.vue";
+import axios from "axios";
+import { base_url } from "../../api/api";
+
 export default {
   name: "Todo",
   components: {
     Header,
+    TodoTable,
   },
   data() {
     return {
       todoVal: "",
+      name: "",
       todoList: [],
+      sortOption: "",
+      errMsg: {},
+      inputClicked: false,
+      searchTerm: "",
     };
   },
   created() {
     this.getTodoList();
   },
+
+  computed: {
+    filteredList() {
+      return this.todoList.filter((item) =>
+        item.title.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    },
+  },
+
   methods: {
-    saveTodoList() {
-      localStorage.setItem("todos", JSON.stringify(this.todoList));
+    handleInputClick(fieldName) {
+      this.inputClicked = fieldName;
+      if (!this[fieldName].trim()) {
+        this.errMsg[fieldName] = "This field is required!";
+      } else {
+        this.errMsg[fieldName] = "";
+      }
     },
 
-    createTodo() {
-      let newTodo = {
-        id: Date.now(),
-        title: this.todoVal,
-      };
-      this.todoList.push(newTodo);
-      this.saveTodoList();
-      this.todoVal = "";
+    async getTodoList() {
+      try {
+        const { data } = await axios.get(`${base_url}/todo/all`);
+        this.todoList = data;
+      } catch (error) {
+        console.log(error);
+      }
     },
 
-    deleteTodo(id) {
-      this.todoList = this.todoList.filter((i) => i.id !== id);
-      this.saveTodoList();
+    async createTodo() {
+      try {
+        const { data } = await axios.post(`${base_url}/todo/create`, {
+          title: this.todoVal,
+        });
+        this.todoList.push(data);
+        this.todoVal = "";
+        console.log(data);
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    async deleteTodo(id) {
+      try {
+        await axios.delete(`${base_url}/todo/${id}`);
+        // console.log("Todo has been deleted!!");
+        this.todoList = this.todoList.filter((i) => i._id !== id);
+      } catch (error) {
+        console.log(error.message);
+      }
     },
 
     editTodo(item) {
       item.isEditing = true;
       item.updatedTitle = item.title;
     },
-
     updateTodo() {
       this.todoList.forEach((item) => {
         if (item.isEditing) {
@@ -84,25 +153,41 @@ export default {
           item.isEditing = false;
         }
       });
-      this.saveTodoList();
     },
 
-    getTodoList() {
-      const savedTodos = localStorage.getItem("todos");
-      if (savedTodos) {
-        this.todoList = JSON.parse(savedTodos);
-      }
-    },
+    // async updateTodo(id) {
+    //   try {
+    //     const item = this.todoList.find((item) => item._id === id);
+    //     const { data } = await axios.put(`${base_url}/todo/${id}`, {
+    //       title: item.updatedTitle,
+    //     });
+    //     item.isEditing = false;
+    //     item.title = item.updatedTitle;
+    //     console.log(data);
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // },
 
     sortAsc() {
       return this.todoList.sort((a, b) => {
-        return a.title < b.title ? -1 : 1;
+        return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
       });
     },
     sortDesc() {
       return this.todoList.sort((a, b) => {
-        return a.title < b.title ? 1 : -1;
+        return a.title.toLowerCase() < b.title.toLowerCase() ? 1 : -1;
       });
+    },
+  },
+
+  watch: {
+    sortOption(opt) {
+      if (opt === "asc") {
+        this.sortAsc();
+      } else if (opt === "desc") {
+        this.sortDesc();
+      }
     },
   },
 };
@@ -111,14 +196,12 @@ export default {
 <style scoped>
 .todo_container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 .todo_create {
-  padding: 2rem;
-  box-shadow: 0 0.1rem 0.3rem rgb(0, 0, 0, 0.2);
-  margin-top: 3rem;
-  max-width: 30rem;
+  margin-top: 1rem;
 }
 .todo_create h3 {
   text-align: center;
@@ -149,27 +232,25 @@ export default {
   width: 90%;
   margin: 1rem auto;
 }
-.todo_action_btns button {
-  padding: 0.5rem;
-  border: none;
-  border-radius: 0.1rem;
-  color: aliceblue;
-  margin: 0 0.5rem;
-}
-.todo_action_btns button:nth-child(1) {
-  background-color: crimson;
-}
-.todo_action_btns button:nth-child(2) {
-  background-color: green;
-}
+
 .sorting {
-  margin-bottom: 2rem;
+  width: 10rem;
+  margin: 1rem auto;
 }
-.sorting button {
+.sorting select {
   padding: 0.5rem;
-  border: none;
+  background-color: white;
+  width: 100%;
+  outline: none;
+  border: 1px solid lightgray;
+}
+.todo_table_container {
+  width: 100%;
+}
+.todo_table_container h2 {
+  text-align: center;
+  background-color: rgb(7, 49, 49);
+  padding: 0.5rem 0;
   color: aliceblue;
-  background-color: rgb(18, 29, 32);
-  margin: 0 0.5rem;
 }
 </style>

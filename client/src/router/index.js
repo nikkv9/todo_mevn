@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Home from "../components/home/Home.vue";
-import Todo from "../components/todo/Todo.vue";
+// import Todo from "../components/todo/Todo.vue";
 // import Todo1 from "../components/todo/Todo1.vue";
-import Todo2 from "../components/todo/Todo2.vue";
+import Todo from "../components/todo/Todo.vue";
 import Learning from "../components/Learning/Learning.vue";
 
 const router = createRouter({
@@ -13,11 +13,11 @@ const router = createRouter({
       name: "home",
       component: Home,
     },
-    {
-      path: "/todo",
-      name: "todo",
-      component: Todo,
-    },
+    // {
+    //   path: "/todo",
+    //   name: "todo",
+    //   component: Todo,
+    // },
     // {
     //   path: "/todo",
     //   name: "todo",
@@ -26,7 +26,7 @@ const router = createRouter({
     {
       path: "/todo",
       name: "todo",
-      component: Todo2,
+      component: Todo,
     },
     {
       path: "/learning",

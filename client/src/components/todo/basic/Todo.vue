@@ -2,31 +2,31 @@
   <div class="todo_container">
     <div class="todo_create">
       <h3>CREATE TODO</h3>
-      <form class="input_container" @submit.prevent="createTodo()">
+      <div class="input_container">
         <input type="text" v-model="todoVal" />
-        <button type="submit">CREATE</button>
-      </form>
+        <button @click="createTodo()">CREATE</button>
+      </div>
 
       <div class="sorting">
-        <select v-model="sortOption">
+        <!-- <select name="" id="">
           <option value="" disabled>Sorting</option>
-          <option value="asc">Ascending</option>
+          <option value="asc" @click="sortAsc()">Ascending</option>
           <option value="desc">Descending</option>
-        </select>
-        <!-- <button @click="sortAsc()">Sort Asc</button>
-        <button @click="sortDesc()">Sort Desc</button> -->
+        </select> -->
+        <button @click="sortAsc()">Sort Asc</button>
+        <button @click="sortDesc()">Sort Desc</button>
       </div>
 
       <div class="list_container">
         <li v-for="item in todoList" :key="item.id">
           <div v-if="item.isEditing" class="input_container">
             <input type="text" v-model="item.updatedTitle" />
-            <button @click="updateTodo(item._id)">Update</button>
+            <button @click="updateTodo()">Update</button>
           </div>
           <div v-else class="data_container">
             {{ item.title }}
             <div class="todo_action_btns">
-              <button @click="deleteTodo(item._id)">Delete</button>
+              <button @click="deleteTodo(item.id)">Delete</button>
               <button @click="editTodo(item)">Edit</button>
             </div>
           </div>
@@ -38,9 +38,6 @@
 
 <script>
 import Header from "../layouts/Header.vue";
-import axios from "axios";
-import { base_url } from "../../api/api";
-
 export default {
   name: "Todo",
   components: {
@@ -50,44 +47,29 @@ export default {
     return {
       todoVal: "",
       todoList: [],
-      sortOption: "",
     };
   },
   created() {
     this.getTodoList();
   },
-
   methods: {
-    async getTodoList() {
-      try {
-        const { data } = await axios.get(`${base_url}/todo/all`);
-        this.todoList = data;
-      } catch (error) {
-        console.log(error);
-      }
+    saveTodoList() {
+      localStorage.setItem("todos", JSON.stringify(this.todoList));
     },
 
-    async createTodo() {
-      try {
-        const { data } = await axios.post(`${base_url}/todo/create`, {
-          title: this.todoVal,
-        });
-        this.todoList.push(data);
-        this.todoVal = "";
-        console.log(data);
-      } catch (error) {
-        console.log(error);
-      }
+    createTodo() {
+      let newTodo = {
+        id: Date.now(),
+        title: this.todoVal,
+      };
+      this.todoList.push(newTodo);
+      this.saveTodoList();
+      this.todoVal = "";
     },
 
-    async deleteTodo(id) {
-      try {
-        await axios.delete(`${base_url}/todo/${id}`);
-        // console.log("Todo has been deleted!!");
-        this.todoList = this.todoList.filter((i) => i._id !== id);
-      } catch (error) {
-        console.log(error.message);
-      }
+    deleteTodo(id) {
+      this.todoList = this.todoList.filter((i) => i.id !== id);
+      this.saveTodoList();
     },
 
     editTodo(item) {
@@ -95,37 +77,32 @@ export default {
       item.updatedTitle = item.title;
     },
 
-    async updateTodo(id) {
-      try {
-        const { data } = await axios.put(`${base_url}/todo/${id}`, {
-          title: this.todoVal,
-        });
-        // item.isEditing = false;
-        console.log(data);
-      } catch (error) {
-        console.log(error);
+    updateTodo() {
+      this.todoList.forEach((item) => {
+        if (item.isEditing) {
+          item.title = item.updatedTitle;
+          item.isEditing = false;
+        }
+      });
+      this.saveTodoList();
+    },
+
+    getTodoList() {
+      const savedTodos = localStorage.getItem("todos");
+      if (savedTodos) {
+        this.todoList = JSON.parse(savedTodos);
       }
     },
 
     sortAsc() {
       return this.todoList.sort((a, b) => {
-        return a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1;
+        return a.title < b.title ? -1 : 1;
       });
     },
     sortDesc() {
       return this.todoList.sort((a, b) => {
-        return a.title.toLowerCase() < b.title.toLowerCase() ? 1 : -1;
+        return a.title < b.title ? 1 : -1;
       });
-    },
-  },
-
-  watch: {
-    sortOption(opt) {
-      if (opt === "asc") {
-        this.sortAsc();
-      } else if (opt === "desc") {
-        this.sortDesc();
-      }
     },
   },
 };
