@@ -62,6 +62,7 @@
         </li>
       </ul>
     </div> -->
+    <ToastifyContainer autoClose="1000" />
   </div>
 </template>
 
@@ -70,6 +71,8 @@ import Header from "../layouts/Header.vue";
 import TodoTable from "./TodoTable.vue";
 import axios from "axios";
 import { base_url } from "../../api/api";
+import { toast } from "vue3-toastify";
+import "vue3-toastify/dist/index.css";
 
 export default {
   name: "Todo",
@@ -77,6 +80,7 @@ export default {
     Header,
     TodoTable,
   },
+
   data() {
     return {
       todoVal: "",
@@ -121,6 +125,9 @@ export default {
 
     async createTodo() {
       try {
+        if (!this.todoVal) {
+          return toast.error("Please add data!");
+        }
         const { data } = await axios.post(`${base_url}/todo/create`, {
           title: this.todoVal,
         });
@@ -146,28 +153,20 @@ export default {
       item.isEditing = true;
       item.updatedTitle = item.title;
     },
-    updateTodo() {
-      this.todoList.forEach((item) => {
-        if (item.isEditing) {
-          item.title = item.updatedTitle;
-          item.isEditing = false;
-        }
-      });
-    },
 
-    // async updateTodo(id) {
-    //   try {
-    //     const item = this.todoList.find((item) => item._id === id);
-    //     const { data } = await axios.put(`${base_url}/todo/${id}`, {
-    //       title: item.updatedTitle,
-    //     });
-    //     item.isEditing = false;
-    //     item.title = item.updatedTitle;
-    //     console.log(data);
-    //   } catch (error) {
-    //     console.log(error);
-    //   }
-    // },
+    async updateTodo(id) {
+      try {
+        const item = this.todoList.find((item) => item._id === id);
+        const { data } = await axios.put(`${base_url}/todo/${id}`, {
+          title: item.updatedTitle,
+        });
+        item.isEditing = false;
+        item.title = item.updatedTitle;
+        console.log(data);
+      } catch (error) {
+        console.log(error);
+      }
+    },
 
     sortAsc() {
       return this.todoList.sort((a, b) => {

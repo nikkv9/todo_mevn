@@ -10,8 +10,10 @@
   "dependencies": {
     "@vuepic/vue-datepicker": "^5.4.0",
     "axios": "^1.4.0",
+    "un": "^0.0.0",
     "vue": "^3.3.4",
-    "vue-router": "^4.2.2"
+    "vue-router": "^4.2.2",
+    "vue3-toastify": "^0.1.11"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.2.3",
